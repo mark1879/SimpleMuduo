@@ -25,8 +25,8 @@ private:
 
 #define LOG_INFO(log_msg_format, ...) \
     do { \
-        Logger &logger = Logger::instance(); \
-        logger.setLogLevel(LogLevel::kInfo); \
+        Logger &logger = Logger::Instance(); \
+        logger.set_log_level(LogLevel::kInfo); \
         char buf[BUF_LEN] = {0}; \
         snprintf(buf, BUF_LEN, log_msg_format, ##__VA_ARGS__); \
         logger.Log(buf); \
@@ -35,8 +35,8 @@ private:
 #define LOG_ERROR(log_msg_format, ...) \
     do \
     { \
-        Logger &logger = Logger::instance(); \
-        logger.setLogLevel(LogLevel::kError); \
+        Logger &logger = Logger::Instance(); \
+        logger.set_log_level(LogLevel::kError); \
         char buf[BUF_LEN] = {0}; \
         snprintf(buf, BUF_LEN, log_msg_format, ##__VA_ARGS__); \
         logger.Log(buf); \
@@ -45,8 +45,8 @@ private:
 #define LOG_FATAL(log_msg_format, ...) \
     do \
     { \
-        Logger &logger = Logger::instance(); \
-        logger.setLogLevel(LogLevel::kFatal); \
+        Logger &logger = Logger::Instance(); \
+        logger.set_log_level(LogLevel::kFatal); \
         char buf[BUF_LEN] = {0}; \
         snprintf(buf, BUF_LEN, log_msg_format, ##__VA_ARGS__); \
         logger.Log(buf); \
@@ -57,8 +57,8 @@ private:
 #define LOG_DEBUG(log_msg_format, ...) \
     do \
     { \
-        Logger &logger = Logger::instance(); \
-        logger.setLogLevel(LogLevel::kDebug); \
+        Logger &logger = Logger::Instance(); \
+        logger.set_log_level(LogLevel::kDebug); \
         char buf[BUF_LEN] = {0}; \
         snprintf(buf, BUF_LEN, log_msg_format, ##__VA_ARGS__); \
         logger.Log(buf); \
