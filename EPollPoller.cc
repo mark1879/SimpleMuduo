@@ -37,15 +37,18 @@ TimeStamp EPollPoller::Poll(int timeout_ms, ChannelList *active_channels) {
         if (num_events == events_.size()) {
             events_.resize(events_.size() * 2);
         }  
+
     } else if (num_events == 0) {
 
         LOG_DEBUG("%s, timeout!\n", __FUNCTION__);
+
     } else {
 
         if (save_errno != EINTR){
             errno = save_errno;
             LOG_ERROR("%s, err!", __FUNCTION__);
         }
+        
     }
 
     return now;
