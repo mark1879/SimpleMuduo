@@ -3,14 +3,15 @@
 #include <functional>
 #include <memory>
 #include "noncopyable.h"
-#include "Timestamp.h"
-#include "EventLoop.h"
+
+class EventLoop;
+class TimeStamp;
 
 class Channel : noncopyable {
 public:
     using EventCallback = std::function<void()>;
     using ReadEventCallback = std::function<void(TimeStamp)>;
-
+ 
     Channel(EventLoop *loop, int fd);
     ~Channel();
 
@@ -21,6 +22,7 @@ public:
     void set_close_callback(EventCallback cb) { close_callback_ = std::move(cb); }
     void set_error_callback(EventCallback cb) { error_callback_ = std::move(cb); }
 
+     
     void set_tie(const std::shared_ptr<void>&);
 
     int fd() const { return fd_; }

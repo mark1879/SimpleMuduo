@@ -21,11 +21,11 @@ void Channel::set_tie(const std::shared_ptr<void>& obj) {
 }
 
 void Channel::Update() {
-
+    loop_->UpdateChannel(this);
 }
 
 void Channel::Remove() {
-
+    loop_->RemoveChannel(this);
 }
 
 void Channel::HandleEvent(TimeStamp recv_time) {
