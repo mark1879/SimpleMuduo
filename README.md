@@ -1,2 +1,2 @@
 # SimpleMuduo
-a c++ network library
+c++ network library
