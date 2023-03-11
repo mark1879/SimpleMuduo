@@ -7,6 +7,13 @@
 
 class EventLoop;
 
+enum class ChannelIndex
+{
+    kNew = -1,
+    kAdded = 1,
+    kDeleted = 2
+};
+
 class Channel : noncopyable
 {
 public:
