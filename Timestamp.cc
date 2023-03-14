@@ -1,16 +1,16 @@
 #include "Timestamp.h"
 
-TimeStamp::TimeStamp() : micro_seconds_since_epoch_(0) {}
+Timestamp::Timestamp() : micro_seconds_since_epoch_(0) {}
 
-TimeStamp::TimeStamp(int64_t micro_seconds_since_epoch) 
+Timestamp::Timestamp(int64_t micro_seconds_since_epoch) 
     : micro_seconds_since_epoch_(micro_seconds_since_epoch)
     {}
 
-TimeStamp TimeStamp::now() {
-    return TimeStamp(time(NULL));
+Timestamp Timestamp::now() {
+    return Timestamp(time(NULL));
 }
 
-std::string TimeStamp::ToString() const {
+std::string Timestamp::ToString() const {
     char buf[128] = {0};
     tm *tm_time = localtime(&micro_seconds_since_epoch_);
     
