@@ -1,49 +1,37 @@
 #pragma once
 
 #include "noncopyable.h"
-#include "Timestamp.h"
 #include <functional>
 #include <memory>
 
 class EventLoop;
-
-enum class ChannelIndex
-{
-    kNew = -1,
-    kAdded = 1,
-    kDeleted = 2
-};
+class Timestamp;
 
 class Channel : noncopyable
 {
 public:
     using EventCallback = std::function<void()>;
-    using ReadEventCallback = std::function<void(TimeStamp)>;
+    using ReadEventCallback = std::function<void(Timestamp)>;
 
-    Channel(EventLoop *loop, int fd)
-        : loop_(loop), fd_(fd)
-        , events_(0), revents_(0)
-        , index_(-1), tied_(false)
-    {}
+    Channel(EventLoop *loop, int fd);
+    ~Channel();
 
-    ~Channel()
-    {}
+    void HandleEvent(Timestamp received_time);
 
-    void HandleEvent(TimeStamp received_time);
-
-    void set_read_callback_(ReadEventCallback cb)
+    void set_read_callback(ReadEventCallback cb)
     { read_callback_ = std::move(cb); }
 
-    void set_write_callback(EventCallback cb)
+    void set_write_callback(EventCallback cb) 
     { write_callback_ = std::move(cb); }
 
     void set_close_callback(EventCallback cb)
-    { close_callback_ = std::move(cb); }
+    { close_callback_ = std::move(cb); } 
 
-    void set_error_allback_(EventCallback cb)
+    void set_error_allback(EventCallback cb)
     { error_callback_ = std::move(cb); }
     
-    // 防止当 channel 还在执行回调操作时，被手动remove掉
+    // Tie this channel to the owner object managed by shared_ptr
+    // prevent the ower object being destroyed in HandleEvent
     void set_tie(const std::shared_ptr<void>&);
 
     int fd() const { return fd_; }
@@ -68,7 +56,7 @@ public:
 
 private:
     void Update();
-    void HandleEventWithGuard(TimeStamp received_time);
+    void HandleEventWithGuard(Timestamp received_time);
 
     static const int kNoneEvent;
     static const int kReadEvent;
@@ -76,9 +64,9 @@ private:
 
     EventLoop *loop_;
     const int fd_;
-    int events_;
-    int revents_;
-    int index_;
+    int events_;    // The events fd_ focuses on
+    int revents_;   // it's the received event types of epoll or poll
+    int index_;     // used by Poller
 
     std::weak_ptr<void> tie_;
     bool tied_;

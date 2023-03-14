@@ -1,12 +1,22 @@
 #include "Channel.h"
 #include "EventLoop.h"
 #include "Logger.h"
-
+#include "Timestamp.h"
 #include <sys/epoll.h>
 
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
+
+
+Channel::Channel(EventLoop *loop, int fd)
+    : loop_(loop), fd_(fd)
+    , events_(0), revents_(0)
+    , index_(-1), tied_(false)
+{}
+
+Channel::~Channel() 
+{}
 
 void Channel::set_tie(const std::shared_ptr<void> &obj)
 {
@@ -16,15 +26,15 @@ void Channel::set_tie(const std::shared_ptr<void> &obj)
 
 void Channel::Update()
 {
-
+    loop_->UpdateChannel(this);
 }
 
 void Channel::Remove()
 {
-
+    loop_->RemoveChannel(this);
 }
 
-void Channel::HandleEvent(TimeStamp received_time)
+void Channel::HandleEvent(Timestamp received_time)
 {
     if (tied_)
     {
@@ -38,7 +48,7 @@ void Channel::HandleEvent(TimeStamp received_time)
     }
 }
 
-void Channel::HandleEventWithGuard(TimeStamp received_time)
+void Channel::HandleEventWithGuard(Timestamp received_time)
 {
     LOG_INFO("channel HandleEvent revents:%d\n", revents_);
 
