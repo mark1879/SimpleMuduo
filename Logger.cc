@@ -36,5 +36,5 @@ void Logger::Log(std::string msg)
         break;
     }
 
-    std::cout << TimeStamp::now().ToString() << " : " << msg << std::endl;
+    std::cout << Timestamp::now().ToString() << " : " << msg << std::endl;
 }

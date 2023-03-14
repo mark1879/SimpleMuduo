@@ -4,7 +4,7 @@
 
 Poller* Poller::NewDefaultPoller(EventLoop *loop)
 {
-    if (getenv("MUDUO_USE_POLL"))
+    if (::getenv("MUDUO_USE_POLL"))
     {
         return nullptr;
     }

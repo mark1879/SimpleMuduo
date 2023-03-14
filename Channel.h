@@ -7,6 +7,13 @@
 class EventLoop;
 class Timestamp;
 
+enum class ChannelState
+{
+    kNew = -1,
+    kAdded = 1,
+    kDeleted = 2
+};
+
 class Channel : noncopyable
 {
 public:
@@ -48,8 +55,8 @@ public:
     bool IsWriting() const { return events_ & kWriteEvent; }
     bool IsReading() const { return events_ & kReadEvent; }
 
-    int index() { return index_; }
-    void set_index(int idx) { index_ = idx; }
+    ChannelState state() { return state_; }
+    void set_state(ChannelState state) { state_ = state; }
 
     EventLoop* OwnerLoop() { return loop_; }
     void Remove();
@@ -64,9 +71,9 @@ private:
 
     EventLoop *loop_;
     const int fd_;
-    int events_;    // The events fd_ focuses on
+    int events_;    // The events interested by fd_
     int revents_;   // it's the received event types of epoll or poll
-    int index_;     // used by Poller
+    ChannelState state_;     // used by Poller
 
     std::weak_ptr<void> tie_;
     bool tied_;

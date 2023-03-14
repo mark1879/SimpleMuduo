@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Poller.h"
-#include "Timestamp.h"
 #include <vector>
 #include <sys/epoll.h>
 
 class Channel;
+class Timestamp;
 
 class EPollPoller : public Poller
 {
@@ -13,7 +13,7 @@ public:
     EPollPoller(EventLoop* loop);
     ~EPollPoller() override;
 
-    TimeStamp Poll(int timeout_ms, ChannelList *activate_channel_list) override;
+    Timestamp Poll(int timeout_ms, ChannelList *activate_channel_list) override;
     void UpdateChannel(Channel* channel) override;
     void RemoveChannel(Channel* channel) override;
 

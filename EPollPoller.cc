@@ -1,18 +1,14 @@
 #include "EPollPoller.h"
 #include "Logger.h"
 #include "Channel.h"
-
+#include "Timestamp.h"
 #include <errno.h>
 #include <unistd.h>
 #include <strings.h>
 
-const int kNew = -1;
-const int kAdded = 1;
-const int kDeleted = 2;
-
 EPollPoller::EPollPoller(EventLoop *loop)
     : Poller(loop)
-    , epoll_fd_(epoll_create1(EPOLL_CLOEXEC))
+    , epoll_fd_(::epoll_create1(EPOLL_CLOEXEC))
     , event_list_(kInitEventListSize)
 {
     if (epoll_fd_ < 0)
@@ -23,16 +19,16 @@ EPollPoller::EPollPoller(EventLoop *loop)
 
 EPollPoller::~EPollPoller()
 {
-    close(epoll_fd_);
+    ::close(epoll_fd_);
 }
 
-TimeStamp EPollPoller::Poll(int timeout_ms, ChannelList *activate_channel_list)
+Timestamp EPollPoller::Poll(int timeout_ms, ChannelList *activate_channel_list)
 {
     LOG_INFO("%s: total fd count: %lu\n", __FUNCTION__, channel_map_.size());
 
-    int events_num = epoll_wait(epoll_fd_, &*event_list_.begin(), static_cast<int>(event_list_.size()), timeout_ms);
-    int stored_errno = errno;
-    TimeStamp now(TimeStamp::now());
+    int events_num = ::epoll_wait(epoll_fd_, &*event_list_.begin(), static_cast<int>(event_list_.size()), timeout_ms);
+    int saved_errno = errno;
+    Timestamp now(Timestamp::now());
 
     if (events_num > 0)
     {
@@ -49,9 +45,9 @@ TimeStamp EPollPoller::Poll(int timeout_ms, ChannelList *activate_channel_list)
     }
     else
     {
-        if (stored_errno != EINTR)
+        if (saved_errno != EINTR)
         {
-            errno = stored_errno;
+            errno = saved_errno;
             LOG_ERROR("%s: error!", __FUNCTION__);
         }
     }
@@ -61,17 +57,18 @@ TimeStamp EPollPoller::Poll(int timeout_ms, ChannelList *activate_channel_list)
 
 void EPollPoller::UpdateChannel(Channel* channel)
 {
-    const int index = channel->index();
-    LOG_INFO("%s: fd:%d, events:%d, index:%d\n", __FUNCTION__, channel->fd(), channel->events(), index);
+    const ChannelState channel_state = channel->state();
+    LOG_INFO("%s: fd:%d, events:%d, channel_state:%d\n", __FUNCTION__, channel->fd(), channel->events(), static_cast<int>(channel_state));
 
-    if (index == kNew || index == kDeleted)
+    if (channel_state == ChannelState::kNew 
+        || channel_state == ChannelState::kDeleted)
     {
-        if (index == kNew)
+        if (channel_state == ChannelState::kNew)
         {
             channel_map_[channel->fd()] = channel;
         }
 
-        channel->set_index(kAdded);
+        channel->set_state(ChannelState::kAdded);
         Update(EPOLL_CTL_ADD, channel);
     }
     else
@@ -79,7 +76,7 @@ void EPollPoller::UpdateChannel(Channel* channel)
         if (channel->IsNoneEvent())
         {
             Update(EPOLL_CTL_DEL, channel);
-            channel->set_index(kDeleted);
+            channel->set_state(ChannelState::kDeleted);
         }
         else
         {
@@ -95,12 +92,12 @@ void EPollPoller::RemoveChannel(Channel* channel)
 
     LOG_INFO("%s, fd:%d\n", __FUNCTION__, fd);
 
-    if (channel->index() == kAdded)
+    if (channel->state() == ChannelState::kAdded)
     {
         Update(EPOLL_CTL_DEL, channel);
     }
 
-    channel->set_index(kNew);
+    channel->set_state(ChannelState::kNew);
 }
 
 void EPollPoller::FillActivateChannels(int events_num, ChannelList *activate_channel_list) const
@@ -123,7 +120,7 @@ void EPollPoller::Update(int operation, Channel* channel)
     event.data.fd = fd;
     event.data.ptr = channel;
 
-    if (epoll_ctl(epoll_fd_, operation, fd, &event) < 0)
+    if (::epoll_ctl(epoll_fd_, operation, fd, &event) < 0)
     {
         if (operation == EPOLL_CTL_DEL)
         {
