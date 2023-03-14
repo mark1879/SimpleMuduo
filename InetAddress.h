@@ -14,13 +14,13 @@ public:
     std::string ToIPPort() const;
     uint16_t ToPort() const;
 
-    const sockaddr_in* addr() const 
-    { return &addr_; }
+    const sockaddr_in* sock_addr() const 
+    { return &sock_addr_; }
 
-    void set_addr(const sockaddr_in &addr) 
-    { addr_ = addr; }
+    void set_sock_addr(const sockaddr_in &addr) 
+    { sock_addr_ = addr; }
 
 private:
-    sockaddr_in addr_;
+    sockaddr_in sock_addr_;
     const size_t kMaxBufSize = 64;
 };
