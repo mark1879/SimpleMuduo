@@ -1,11 +1,11 @@
 #pragma once
 
+#include "Timestamp.h"
 #include "noncopyable.h"
 #include <functional>
 #include <memory>
 
 class EventLoop;
-class Timestamp;
 
 enum class ChannelState
 {
