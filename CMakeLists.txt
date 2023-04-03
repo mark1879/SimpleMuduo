@@ -10,7 +10,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(simple_muduo Timestamp.cc Logger.cc InetAddress.cc Channel.cc Poller.cc EPollPoller.cc 
                 DefaultPoller.cc CurrentThread.cc EventLoop.cc Thread.cc EventLoopThread.cc EventLoopThreadPool.cc 
-                Socket.cc Acceptor.cc)
+                Socket.cc Acceptor.cc TcpServer.cc TcpConnection.cc Buffer.cc)
 
 set(head_files noncopyable.h)
 install(FILES ${head_files} DESTINATION  ${PROJECT_NAME}/include)
