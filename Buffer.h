@@ -4,14 +4,23 @@
 #include <string>
 #include <algorithm>
 
+///
+/// @code
+/// +-------------------+------------------+------------------+
+/// | prependable bytes |  readable bytes  |  writable bytes  |
+/// |                   |     (CONTENT)    |                  |
+/// +-------------------+------------------+------------------+
+/// |                   |                  |                  |
+/// 0      <=      readerIndex   <=   writerIndex    <=     size
+/// @endcode
 class Buffer
 {
 public:
     static const size_t kCheapPrepend = 8;
     static const size_t kInitialSize = 1024;
 
-    explicit Buffer(size_t initialSize = kInitialSize)
-        : buffer_(kCheapPrepend + initialSize)
+    explicit Buffer(size_t initial_size = kInitialSize)
+        : buffer_(kCheapPrepend + initial_size)
         , reader_index_(kCheapPrepend)
         , writer_index_(kCheapPrepend)
     {}
@@ -28,9 +37,11 @@ public:
 
     size_t PrependableBytes() const
     {
+        // 空闲空间，包括头部的 8 个字节
         return reader_index_;
     }
 
+    // 返回缓冲区中可读数据的起始地址
     const char* Peek() const
     {
         return Begin() + reader_index_;
@@ -61,6 +72,7 @@ public:
     std::string RetrieveAsString(size_t len)
     {
         std::string result(Peek(), len);
+        // 缓冲区复位
         Retrieve(len); 
 
         return result;

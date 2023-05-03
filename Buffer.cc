@@ -11,13 +11,15 @@ ssize_t Buffer::ReadFd(int fd, int* stored_errno)
     
     struct iovec vec[2];
     
-    const size_t writable_bytes = WritableBytes();
+    const size_t writable_bytes = WritableBytes();  // Buffer 底层缓冲区剩余的可写空间大小
     vec[0].iov_base = Begin() + writer_index_;
     vec[0].iov_len = writable_bytes;
 
+    // 如果 vec[0] 空间够用，则不用考虑 vec[1]
     vec[1].iov_base = extra_buf;
     vec[1].iov_len = sizeof(extra_buf);
     
+    // 一次最多读 65536 / 1024 = 64k Bytes
     const int iovcnt = (writable_bytes < sizeof(extra_buf)) ? 2 : 1;
     const ssize_t n = ::readv(fd, vec, iovcnt);
     if (n < 0)
