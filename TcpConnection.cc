@@ -22,6 +22,19 @@ static EventLoop* CheckLoopNotNull(EventLoop *loop)
     return loop;
 }
 
+void DefaultConnectionCallback(const TcpConnectionPtr& conn)
+{
+    LOG_INFO("%s -> %s is %s", conn->local_addr().ToIPPort().c_str()
+                , conn->peer_addr().ToIPPort().c_str()
+                , (conn->connected() ? "UP" : "DOWN"));
+  // do not call conn->forceClose(), because some users want to register message callback only.
+}
+
+void DefaultMessageCallback(const TcpConnectionPtr&, Buffer* buf, Timestamp)
+{
+     buf->RetrieveAll();
+}
+
 TcpConnection::TcpConnection(EventLoop *loop, 
                 const std::string &name, 
                 int sock_fd,
@@ -92,7 +105,7 @@ void TcpConnection::SendInLoop(const void* data, size_t len)
     if (state_ == kDisconnected)
     {
         LOG_ERROR("disconnected, give up writing!");
-        return;
+        return; 
     }
 
     if (!channel_->IsWriting() && output_buffer_.ReadableBytes() == 0)
@@ -103,6 +116,7 @@ void TcpConnection::SendInLoop(const void* data, size_t len)
             bytes_remain = len - bytes_wrote;
             if (bytes_remain == 0 && write_complete_callback_)
             {
+                // 数据已经发送完毕，不需要再注册 EPOLLOUT 事件，即不会收到 HandleWrite 回调
                 loop_->QueueInLoop(std::bind(write_complete_callback_, shared_from_this()));
             }
         }
@@ -120,12 +134,13 @@ void TcpConnection::SendInLoop(const void* data, size_t len)
         }
     }
 
+    // 将剩余的数据存入缓冲区，并注册 EPOLLOUT 事件，等待 HandleWrite 回调
     if (!fault_error && bytes_remain > 0) 
     {
         size_t old_len = output_buffer_.ReadableBytes();
 
         if (old_len + bytes_remain >= high_watermark_
-            && old_len < high_watermark_
+            && old_len < high_watermark_    // 如果 old_len >= high_watermark_, 则已经回调过
             && high_watermark_callback_)
         {
             loop_->QueueInLoop(std::bind(high_watermark_callback_, shared_from_this(), old_len + bytes_remain));
@@ -143,12 +158,13 @@ void TcpConnection::Shutdown()
 {
     if (state_ == kConnected)
     {
-        set_state(kDisconnecting);
+        // 要等缓冲中的数据发送完毕，再关闭 socket 的 write 功能
+        set_state(kDisconnecting);     
         loop_->RunInLoop(std::bind(&TcpConnection::ShutdownInLoop, this));
     }
 }
 
-void TcpConnection::ShutdownInLoop()
+void TcpConnection::ShutdownInLoop()   
 {
     if (!channel_->IsWriting())
     {
@@ -156,12 +172,12 @@ void TcpConnection::ShutdownInLoop()
     }
 }
 
-
 void TcpConnection::ConnectEstablished()
 {
     set_state(kConnected);
     channel_->set_tie(shared_from_this());
     channel_->EnableReading();
+
     connection_callback_(shared_from_this());
 }
 
@@ -171,6 +187,7 @@ void TcpConnection::ConnectDestroyed()
     {
         set_state(kDisconnected);
         channel_->DisableAll();
+
         connection_callback_(shared_from_this());
     }
     channel_->Remove();
@@ -183,10 +200,11 @@ void TcpConnection::HandleRead(Timestamp received_time)
     if (n > 0)
     {
         message_callback_(shared_from_this(), &input_buffer_, received_time);
+        // input_buffer_.Retrieve(n);  // 数据已经回调给用户，释放 Buffer？ Muduo 中没有这个逻辑
     }
     else if (n == 0)
     {
-        HandleClose();
+        HandleClose();  // 客户端断开
     }
     else
     {
@@ -204,16 +222,20 @@ void TcpConnection::HandleWrite()
         ssize_t n = output_buffer_.WriteFd(channel_->fd(), &saved_errno);
         if (n > 0)
         {
-            output_buffer_.Retrieve(n);
+            output_buffer_.Retrieve(n);     // 释放 Buffer
             if (output_buffer_.ReadableBytes() == 0)
-            {
+            {   
+                // 缓冲区中的数据发送完毕，注销 EPOLLOUT 事件
                 channel_->DisableWriting();
                 if (write_complete_callback_)
                 {
+                    // 唤醒 loop 对应的线程
                     loop_->QueueInLoop(
                         std::bind(write_complete_callback_, shared_from_this())
                     );
                 }
+
+                // 主动调用过 Shutdown
                 if (state_ == kDisconnecting)
                 {
                     ShutdownInLoop();
@@ -222,7 +244,7 @@ void TcpConnection::HandleWrite()
         }
         else
         {
-            LOG_ERROR("TcpConnection::handleWrite");
+            LOG_ERROR("TcpConnection::HandleWrite");
         }
     }
     else
@@ -239,7 +261,7 @@ void TcpConnection::HandleClose()
 
     TcpConnectionPtr conn_ptr(shared_from_this());
     connection_callback_(conn_ptr);
-    connection_callback_(conn_ptr);
+    close_callback_(conn_ptr);
 }
 
 void TcpConnection::HandleError()
@@ -256,5 +278,5 @@ void TcpConnection::HandleError()
         err = opt_val;
     }
 
-    LOG_ERROR("TcpConnection::handleError name:%s - SO_ERROR:%d \n", name_.c_str(), err);
+    LOG_ERROR("TcpConnection::HandleError name:%s - SO_ERROR:%d \n", name_.c_str(), err);
 }

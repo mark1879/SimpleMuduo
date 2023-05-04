@@ -5,6 +5,11 @@
 #include <unistd.h>
 
 
+/**
+ * 从 fd 上读取数据，Poller 工作在 LT 模式。
+ * Buffer 缓冲区大小是固定的， 但是从 fd 上读数据的时候，
+ * 最终的数据大小是未知的，所以要设计 buf。
+ */ 
 ssize_t Buffer::ReadFd(int fd, int* stored_errno)
 {
     char extra_buf[65536] = {0};

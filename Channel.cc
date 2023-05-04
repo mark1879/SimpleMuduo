@@ -6,7 +6,7 @@
 
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
-const int Channel::kWriteEvent = EPOLLOUT;
+const int Channel::kWriteEvent = EPOLLOUT;  // EPOLLOUT 默认已经注册给 epoll
 
 
 Channel::Channel(EventLoop *loop, int fd)

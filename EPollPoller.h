@@ -7,6 +7,11 @@
 class Channel;
 class Timestamp;
 
+/**
+ * epoll_create
+ * epoll_ctl   add/mod/del
+ * epoll_wait
+ */ 
 class EPollPoller : public Poller
 {
 public:

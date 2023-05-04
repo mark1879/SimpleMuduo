@@ -14,6 +14,11 @@ class Channel;
 class EventLoop;
 class Socket;
 
+/**
+ * TcpServer => Acceptor => 接受用户连接，通过 accept 函数获取客户端 sock_fd 
+ * =》创建 TcpConnection 设置回调 =》 Channel =》 注册给 Poller =》 Channel 相关回调
+ * 
+ */ 
 class TcpConnection : noncopyable, public std::enable_shared_from_this<TcpConnection>
 {
 public:
@@ -27,11 +32,11 @@ public:
     EventLoop* loop() const { return loop_; }
     const std::string& name() const { return name_; }
     const InetAddress& local_addr() const { return local_addr_; }
-    const InetAddress& perr_addr() const { return peer_addr_; }
+    const InetAddress& peer_addr() const { return peer_addr_; }
 
     bool connected() const { return state_ == kConnected; }
 
-    void Send(const std::string &buf);
+    void Send(const std::string &buf);  
     void Shutdown();
 
     void set_connection_callback(const ConnectionCallback& cb)
