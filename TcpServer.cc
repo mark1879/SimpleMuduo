@@ -1,7 +1,6 @@
 #include "TcpServer.h"
 #include "Logger.h"
 #include "TcpConnection.h"
-
 #include <strings.h>
 #include <functional>
 
@@ -9,7 +8,7 @@ static EventLoop* CheckLoopNotNull(EventLoop *loop)
 {
     if (loop == nullptr)
     {
-        LOG_FATAL("%s:%s:%d mainLoop is null! \n", __FILE__, __FUNCTION__, __LINE__);
+        LOG_FATAL("%s:%s:%d main  loop is null! \n", __FILE__, __FUNCTION__, __LINE__);
     }
     return loop;
 }
@@ -23,8 +22,8 @@ TcpServer::TcpServer(EventLoop* loop,
                 , name_(name)
                 , acceptor_(new Acceptor(loop, listen_addr, option == kReusePort))
                 , thread_pool_(new EventLoopThreadPool(loop, name_))
-                , connection_callback_()
-                , message_callback_()
+                , connection_callback_(DefaultConnectionCallback)
+                , message_callback_(DefaultMessageCallback)
                 , next_conn_id_(1)
                 , started_(0)
 {
@@ -61,9 +60,9 @@ void TcpServer::Start()
 
 void TcpServer::NewConnection(int sock_fd, const InetAddress &peer_addr)
 {
-    EventLoop *ioLoop = thread_pool_->GetNextLoop(); 
+    EventLoop *io_loop = thread_pool_->GetNextLoop(); 
     char buf[64] = {0};
-    snprintf(buf, sizeof buf, "-%s#%d", ip_port_.c_str(), next_conn_id_);
+    snprintf(buf, sizeof(buf), "-%s#%d", ip_port_.c_str(), next_conn_id_);
     ++next_conn_id_;
     std::string conn_name = name_ + buf;
 
@@ -71,8 +70,8 @@ void TcpServer::NewConnection(int sock_fd, const InetAddress &peer_addr)
         name_.c_str(), conn_name.c_str(), peer_addr.ToIPPort().c_str());
 
     sockaddr_in local;
-    ::bzero(&local, sizeof local);
-    socklen_t addr_len = sizeof local;
+    ::bzero(&local, sizeof(local));
+    socklen_t addr_len = sizeof(local);
     if (::getsockname(sock_fd, (sockaddr*)&local, &addr_len) < 0)
     {
         LOG_ERROR("sockets::GetLocalAddr");
@@ -81,7 +80,7 @@ void TcpServer::NewConnection(int sock_fd, const InetAddress &peer_addr)
     InetAddress local_addr(local);
 
     TcpConnectionPtr conn(new TcpConnection(
-                            ioLoop,
+                            io_loop,
                             conn_name,
                             sock_fd,
                             local_addr,
@@ -96,7 +95,7 @@ void TcpServer::NewConnection(int sock_fd, const InetAddress &peer_addr)
         std::bind(&TcpServer::RemoveConnection, this, std::placeholders::_1)
     );
 
-    ioLoop->RunInLoop(std::bind(&TcpConnection::ConnectEstablished, conn));
+    io_loop->RunInLoop(std::bind(&TcpConnection::ConnectEstablished, conn));
 }
 
 void TcpServer::RemoveConnection(const TcpConnectionPtr &conn)
@@ -112,8 +111,8 @@ void TcpServer::RemoveConnectionInLoop(const TcpConnectionPtr &conn)
         name_.c_str(), conn->name().c_str());
 
     connections_.erase(conn->name());
-    EventLoop *ioLoop = conn->loop(); 
-    ioLoop->QueueInLoop(
+    EventLoop *io_loop = conn->loop(); 
+    io_loop->QueueInLoop(
         std::bind(&TcpConnection::ConnectDestroyed, conn)
     );
 }
