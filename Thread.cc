@@ -30,11 +30,14 @@ void Thread::Start()
     sem_init(&sem, false, 0);
 
     thread_ = std::shared_ptr<std::thread>(new std::thread([&](){
+        // 获取线程的tid值
         tid_ = CurrentThread::tid();
         sem_post(&sem);
+        // 开启一个新线程，专门执行该线程函数
         func_(); 
     }));
 
+    // 这里必须等待获取上面新创建的线程的 tid 值
     sem_wait(&sem);
 }
 
@@ -47,6 +50,7 @@ void Thread::Join()
 void Thread::SetDefaultName()
 {
     int num = ++num_created_;
+
     if (name_.empty())
     {
         char buf[32] = {0};

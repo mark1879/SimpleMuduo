@@ -36,4 +36,3 @@ private:
     std::string name_;
     static std::atomic_int num_created_;
 };
-

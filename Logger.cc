@@ -2,13 +2,13 @@
 #include "Timestamp.h"
 #include <iostream>
 
-Logger& Logger::Instance() 
+Logger& Logger::Instance()
 {
     static Logger logger;
     return logger;
 }
 
-void Logger::set_log_level(LogLevel level)
+void Logger::set_log_level(int level)
 {
     log_level_ = level;
 }
@@ -17,24 +17,21 @@ void Logger::Log(std::string msg)
 {
     switch (log_level_)
     {
-    case LogLevel::kInfo:
+    case INFO:
         std::cout << "[INFO]";
         break;
-    case LogLevel::kWarning:
-        std::cout << "[WARNING]";
-        break;
-    case LogLevel::kError:
+    case ERROR:
         std::cout << "[ERROR]";
         break;
-    case LogLevel::kFatal:
+    case FATAL:
         std::cout << "[FATAL]";
         break;
-    case LogLevel::kDebug:
+    case DEBUG:
         std::cout << "[DEBUG]";
         break;
     default:
         break;
     }
 
-    std::cout << Timestamp::now().ToString() << " : " << msg << std::endl;
+    std::cout << Timestamp::Now().ToString() << " : " << msg << std::endl;
 }

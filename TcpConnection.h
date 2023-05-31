@@ -15,18 +15,16 @@ class EventLoop;
 class Socket;
 
 /**
- * TcpServer => Acceptor => 接受用户连接，通过 accept 函数获取客户端 sock_fd 
- * =》创建 TcpConnection 设置回调 =》 Channel =》 注册给 Poller =》 Channel 相关回调
- * 
+ * TcpServer => Acceptor => 有一个新用户连接，通过 accept 函数拿到 connfd
  */ 
 class TcpConnection : noncopyable, public std::enable_shared_from_this<TcpConnection>
 {
 public:
-    TcpConnection(EventLoop *loop,
-                const std::string& name,
-                int sock_fd,
-                const InetAddress& local_addr,
-                const InetAddress& peer_addr);
+    TcpConnection(EventLoop *loop, 
+                const std::string &name, 
+                int sockfd,
+                const InetAddress& localAddr,
+                const InetAddress& peerAddr);
     ~TcpConnection();
 
     EventLoop* loop() const { return loop_; }
@@ -36,7 +34,7 @@ public:
 
     bool connected() const { return state_ == kConnected; }
 
-    void Send(const std::string &buf);  
+    void Send(const std::string &buf);
     void Shutdown();
 
     void set_connection_callback(const ConnectionCallback& cb)
@@ -48,23 +46,24 @@ public:
     void set_write_complete_callback(const WriteCompleteCallback& cb)
     { write_complete_callback_ = cb; }
 
-    void set_high_watermark_callback(const HighWaterMarkCallback& cb, size_t high_watermark)
-    {
+    void set_high_watermark_callback(const HighWaterMarkCallback& cb, size_t watermark)
+    { 
         high_watermark_callback_ = cb; 
-        high_watermark_ = high_watermark;
+        high_watermark_ = watermark; 
     }
 
     void set_close_callback(const CloseCallback& cb)
     { close_callback_ = cb; }
+
 
     void ConnectEstablished();
     void ConnectDestroyed();
 
 private:
     enum StateE {kDisconnected, kConnecting, kConnected, kDisconnecting};
-    void set_state(StateE state) { state_ = state; }
+    void set_state(StateE s) { state_ = s; }
 
-    void HandleRead(Timestamp receive_time);
+    void HandleRead(Timestamp receiveTime);
     void HandleWrite();
     void HandleClose();
     void HandleError();
@@ -72,7 +71,7 @@ private:
     void SendInLoop(const void* message, size_t len);
     void ShutdownInLoop();
 
-    EventLoop* loop_;       // This is definitely not base loop
+    EventLoop *loop_; // 这里一定不是base loop
     const std::string name_;
     std::atomic_int state_;
     bool reading_;
@@ -85,11 +84,12 @@ private:
 
     ConnectionCallback connection_callback_;
     MessageCallback message_callback_;
-    WriteCompleteCallback write_complete_callback_;
+    WriteCompleteCallback write_complete_callback_; 
     HighWaterMarkCallback high_watermark_callback_;
     CloseCallback close_callback_;
+
     size_t high_watermark_;
 
-    Buffer input_buffer_;
-    Buffer output_buffer_;
+    Buffer input_buffer_;        // 接收数据的缓冲区
+    Buffer output_buffer_;      // 发送数据的缓冲区
 };

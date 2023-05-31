@@ -11,71 +11,72 @@
 
 Socket::~Socket()
 {
-    ::close(fd_);
+    close(sockfd_);
 }
 
-void Socket::BindAddress(const InetAddress &local_addr)
+void Socket::BindAddress(const InetAddress &localaddr)
 {
-    if (0 != ::bind(fd_, (sockaddr*)local_addr.sock_addr(), sizeof(sockaddr_in)))
+    if (0 != ::bind(sockfd_, (sockaddr*)localaddr.sock_addr(), sizeof(sockaddr_in)))
     {
-        LOG_FATAL("bind sockfd:%d failed, errno: %d\n", fd_, errno);
+        LOG_FATAL("bind sockfd:%d fail \n", sockfd_);
     }
 }
 
 void Socket::Listen()
 {
-    if (0 != listen(fd_, 1024))
+    if (0 != ::listen(sockfd_, 1024))
     {
-        LOG_FATAL("listen sockfd:%d failed, errno: %d\n", fd_, errno);
+        LOG_FATAL("listen sockfd:%d fail \n", sockfd_);
     }
 }
 
-int Socket::Accept(InetAddress *peer_addr)
+int Socket::Accept(InetAddress *peeraddr)
 {
+    /**
+     * 1. accept函数的参数不合法
+     * 2. 对返回的connfd没有设置非阻塞
+     * Reactor模型 one loop per thread
+     * poller + non-blocking IO
+     */ 
     sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    bzero(&addr, sizeof(addr));
-    int conn_fd = ::accept4(fd_, (sockaddr*)&addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
-    if (conn_fd >= 0)
+    socklen_t len = sizeof addr;
+    bzero(&addr, sizeof addr);
+    int connfd = ::accept4(sockfd_, (sockaddr*)&addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    if (connfd >= 0)
     {
-        peer_addr->set_sock_addr(addr);
+        peeraddr->set_sock_addr(addr);
     }
-    else
-    {
-        LOG_FATAL("accept sockfd: %d failed, errno: %d\n", fd_, errno);
-    }
-
-    return conn_fd;
+    return connfd;
 }
 
 void Socket::ShutdownWrite()
 {
-    if (::shutdown(fd_, SHUT_WR) < 0)
+    if (::shutdown(sockfd_, SHUT_WR) < 0)
     {
-        LOG_ERROR("shutdown sockfd: %d failed, errno: %d\n", fd_, errno);
+        LOG_ERROR("shutdownWrite error");
     }
 }
 
 void Socket::SetTcpNoDelay(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(fd_, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
+    ::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
 }
 
 void Socket::SetReuseAddr(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 }
 
 void Socket::SetReusePort(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(fd_, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof optval);
+    ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
 }
 
 void Socket::SetKeepAlive(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(fd_, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof optval);
+    ::setsockopt(sockfd_, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
 }

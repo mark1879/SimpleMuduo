@@ -4,19 +4,20 @@
 
 class InetAddress;
 
+// 封装socket fd
 class Socket : noncopyable
 {
 public:
-    explicit Socket(int fd)
-        : fd_(fd)
+    explicit Socket(int sockfd)
+        : sockfd_(sockfd)
     {}
 
     ~Socket();
 
-    int fd() const { return fd_; }
-    void BindAddress(const InetAddress &local_addr);
+    int fd() const { return sockfd_; }
+    void BindAddress(const InetAddress &localaddr);
     void Listen();
-    int Accept(InetAddress *peer_addr);
+    int Accept(InetAddress *peeraddr);
 
     void ShutdownWrite();
 
@@ -25,5 +26,5 @@ public:
     void SetReusePort(bool on);
     void SetKeepAlive(bool on);
 private:
-    const int fd_;
+    const int sockfd_;
 };

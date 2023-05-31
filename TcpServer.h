@@ -1,5 +1,8 @@
 #pragma once
 
+/**
+ * 用户使用muduo编写服务器程序
+ */ 
 #include "EventLoop.h"
 #include "Acceptor.h"
 #include "InetAddress.h"
@@ -15,6 +18,7 @@
 #include <atomic>
 #include <unordered_map>
 
+// 对外的服务器编程使用的类
 class TcpServer : noncopyable
 {
 public:
@@ -27,8 +31,8 @@ public:
     };
 
     TcpServer(EventLoop *loop,
-                const InetAddress &listen_addr,
-                const std::string &name,
+                const InetAddress &listenAddr,
+                const std::string &nameArg,
                 Option option = kNoReusePort);
     ~TcpServer();
 
@@ -37,28 +41,32 @@ public:
     void set_message_callback(const MessageCallback &cb) { message_callback_ = cb; }
     void set_write_complete_callback(const WriteCompleteCallback &cb) { write_complete_callback_ = cb; }
 
+    // 设置底层subloop的个数
     void SetThreadNum(int num_threads);
+
+    // 开启服务器监听
     void Start();
 private:
-    void NewConnection(int sock_fd, const InetAddress &peer_addr);
+    void NewConnection(int sockfd, const InetAddress &peerAddr);
     void RemoveConnection(const TcpConnectionPtr &conn);
     void RemoveConnectionInLoop(const TcpConnectionPtr &conn);
 
     using ConnectionMap = std::unordered_map<std::string, TcpConnectionPtr>;
 
-    EventLoop *loop_;   // base loop created by user
 
+    EventLoop *loop_;               // base loop 用户定义
     const std::string ip_port_;
     const std::string name_;
-    int next_conn_id_;
-    ConnectionMap connections_;
+
+    std::unique_ptr<Acceptor> acceptor_;                 // 运行在mainLoop，任务就是监听新连接事件
+    std::shared_ptr<EventLoopThreadPool> thread_pool_;   // one loop per thread
+
+    ConnectionCallback connection_callback_;             // 有新连接时的回调
+    MessageCallback message_callback_;                   // 有读写消息时的回调
+    WriteCompleteCallback write_complete_callback_;      // 消息发送完成以后的回调
+    ThreadInitCallback thread_init_callback_;           // loop线程初始化的回调
 
     std::atomic_int started_;
-    std::unique_ptr<Acceptor> acceptor_;
-    std::shared_ptr<EventLoopThreadPool> thread_pool_;
-
-    ThreadInitCallback thread_init_callback_;
-    ConnectionCallback connection_callback_;
-    MessageCallback message_callback_;
-    WriteCompleteCallback write_complete_callback_;
+    int next_conn_id_;
+    ConnectionMap connections_;     // 保存所有的连接
 };

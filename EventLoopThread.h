@@ -27,6 +27,6 @@ private:
     bool exiting_;
     Thread thread_;
     std::mutex mutex_;
-    std::condition_variable cond_var_;
-    ThreadInitCallback init_callback_;
+    std::condition_variable cond_;
+    ThreadInitCallback callback_;
 };
