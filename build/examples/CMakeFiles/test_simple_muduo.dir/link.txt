@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/test_simple_muduo.dir/test_simple_muduo.cc.o  -o ../bin/test_simple_muduo  ../libsimple_muduo.a -lpthread 

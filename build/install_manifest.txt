@@ -1,2 +1,0 @@
-/home/ubuntu/SimpleMuduo/build/install/simple_muduo/include/noncopyable.h
-/home/ubuntu/SimpleMuduo/build/install/simple_muduo/lib/libsimple_muduo.a
